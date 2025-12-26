@@ -1,14 +1,15 @@
 <!--
-Astral Text Website - single-file HTML
-Save this as `index.html` and open in a browser to view.
+Astral — Druggy Theme Single-file HTML
+Updated to a vibrant, psychedelic "druggy" style inspired by the uploaded image.
+Features added:
+- Big neon "ASTRAL 🪐" headline (center stage)
+- Two neon buttons: BOT and CHANNEL
+- Full-screen psychedelic background (uses the provided image if available at /mnt/data/1c901687-c034-453c-89a9-819137c60bd9.png, otherwise falls back to gradient)
+- Animated colorful snow / particle effect (slow, dreamy floaters)
+- Extra decorative floating shards and glow
+- Accessible markup and minimal JS for interactions
 
-Features:
-- Full-screen animated starfield using canvas
-- Centered, animated "astral" text with gradient + glow
-- Click the text to edit it in-place (or use the input below)
-- Responsive and lightweight
-
-If you'd like a different word, color scheme, or extra effects (nebula, particles that react to clicks), tell me and I'll update it.
+Save as `index.html` and open in a modern browser. To use the provided inspiration image, place it at the same path used below or update the CSS `--hero-img` url.
 -->
 
 <!doctype html>
@@ -16,205 +17,246 @@ If you'd like a different word, color scheme, or extra effects (nebula, particle
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Astral — Text Demo</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;600&display=swap" rel="stylesheet">
+  <title>ASTRAL 🪐 — Druggy Theme</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rubik:wght@300;700&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg1: #030411;
-      --bg2: #071029;
-      --accent-1: #7ef9ff;
-      --accent-2: #b388ff;
-      --accent-3: #ffd07e;
+      --bg-img: url('/mnt/data/1c901687-c034-453c-89a9-819137c60bd9.png'); /* try to use the provided file */
+      --c1: #ff5bff; /* neon pink */
+      --c2: #7ef9ff; /* cyan */
+      --c3: #b388ff; /* purple */
+      --c4: #ffd07e; /* warm */
+      --glass: rgba(255,255,255,0.06);
     }
-    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Rubik, Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;}
+
+    /* Page background: image if available, otherwise dreamy gradient */
     body{
-      background: radial-gradient(ellipse at 10% 10%, rgba(20,30,60,0.3), transparent 10%), linear-gradient(180deg,var(--bg1), var(--bg2));
-      color: white; overflow:hidden; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      background-color:#070014;
+      background-image: linear-gradient(135deg, rgba(22,6,48,0.8), rgba(6,12,36,0.9)), var(--bg-img);
+      background-size: cover; background-position: center; background-repeat:no-repeat;
+      overflow:hidden; color:white; -webkit-font-smoothing:antialiased;
     }
 
-    /* Fullscreen canvas for starfield */
-    canvas#stars{
-      position:fixed; inset:0; width:100%; height:100%; display:block; z-index:0;
+    /* overlay for blotchy, druggy colors */
+    .color-overlay{
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background: radial-gradient(600px 300px at 10% 20%, rgba(255,91,255,0.08), transparent 10%),
+                  radial-gradient(500px 300px at 85% 80%, rgba(126,249,255,0.06), transparent 12%),
+                  radial-gradient(400px 200px at 45% 50%, rgba(179,136,255,0.06), transparent 10%);
+      mix-blend-mode: screen;
     }
 
-    /* Center UI */
-    .stage{
-      position:relative; z-index:2; height:100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:20px; text-align:center; padding:40px;
+    /* center stage */
+    .stage{position:relative; z-index:2; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px;}
+    .card{width:min(1100px, 96%); display:grid; grid-template-columns: 1fr 420px; gap:24px; align-items:center;}
+
+    /* left: big title and controls */
+    .hero{
+      padding:32px; border-radius:18px; backdrop-filter: blur(8px) saturate(120%); background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+      box-shadow: 0 20px 60px rgba(3,4,20,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
     }
 
-    /* The big astral text */
-    .astral-text{
-      font-family: 'Orbitron', sans-serif; font-weight:700; font-size:clamp(48px, 14vw, 180px);
-      letter-spacing:0.03em; line-height:0.9; cursor:pointer; user-select:none; position:relative;
-      background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
-      -webkit-background-clip:text; background-clip:text; color:transparent;
-      filter: drop-shadow(0 10px 30px rgba(0,0,0,0.6));
+    .title{
+      font-family: 'Orbitron', sans-serif; font-weight:700; letter-spacing:0.02em;
+      font-size: clamp(48px, 8vw, 120px); line-height:0.9; margin:0 0 12px 0; color:transparent; position:relative;
+      -webkit-background-clip:text; background-clip:text;
+      background-image: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4));
+      text-shadow: 0 6px 30px rgba(120,0,120,0.35), 0 2px 10px rgba(0,0,0,0.6);
     }
 
-    /* outer glow */
-    .astral-text::after{
-      content:""; position:absolute; inset:0; z-index:-1; filter:blur(28px) saturate(140%);
-      background: linear-gradient(90deg, rgba(126,249,255,0.2), rgba(179,136,255,0.18), rgba(255,208,126,0.12));
-      opacity:0.9; mix-blend-mode:screen; border-radius:12px;
+    /* planetary ring emoji highlight */
+    .title .emoji{display:inline-block; margin-left:10px; transform:translateY(-4px); filter:drop-shadow(0 6px 18px rgba(0,0,0,0.5));}
+
+    .subtitle{font-size:16px; margin:6px 0 18px 0; color:rgba(255,255,255,0.85)}
+
+    /* neon buttons */
+    .controls{display:flex; gap:12px; align-items:center;}
+    .btn{
+      font-weight:700; padding:14px 20px; border-radius:14px; cursor:pointer; border:1px solid rgba(255,255,255,0.08);
+      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); color:white; letter-spacing:0.06em;
+      box-shadow:0 8px 30px rgba(0,0,0,0.6), 0 0 18px rgba(0,0,0,0.2);
+      transition: transform .18s ease, box-shadow .18s ease;
+      position:relative; overflow:hidden;
     }
+    .btn:before{content:""; position:absolute; inset:0; background:radial-gradient(circle at 10% 10%, rgba(255,255,255,0.06), transparent 30%); mix-blend-mode:overlay; pointer-events:none}
 
-    /* subtle shimmer animation */
-    @keyframes shimmer{ 0%{transform:translateX(-30%)} 100%{transform:translateX(130%)} }
-    .astral-text .shimmer{
-      position:absolute; inset:0; pointer-events:none; background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.18), rgba(255,255,255,0.03)); transform:translateX(-30%); animation:shimmer 6s linear infinite;
-      -webkit-background-clip:text; background-clip:text; color:transparent;
+    .btn--neon{
+      background: linear-gradient(90deg, rgba(255,91,255,0.12), rgba(126,249,255,0.06));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 8px 40px rgba(126,10,140,0.18), 0 0 28px rgba(126,249,255,0.08);
     }
+    .btn--neon:hover{ transform:translateY(-6px) scale(1.02); box-shadow: 0 18px 60px rgba(126,10,140,0.22), 0 0 36px rgba(126,249,255,0.12); }
 
-    /* small controls */
-    .controls{display:flex; gap:8px; align-items:center; justify-content:center; margin-top:8px;}
-    input[type=text]{padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); color:white; outline:none; min-width:180px}
-    button{padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); color:white; cursor:pointer}
-    .muted{opacity:0.7;font-size:13px}
+    .btn--ghost{ background:transparent; border:1px solid rgba(255,255,255,0.06); color:rgba(255,255,255,0.92)}
 
-    footer{position:fixed; right:12px; bottom:12px; z-index:3; font-size:12px; color:rgba(255,255,255,0.6)}
+    /* right: decorative panel */
+    .panel{padding:22px; border-radius:18px; min-height:320px; display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); border:1px solid rgba(255,255,255,0.04);
+    }
+    .panel .badge{font-weight:700; padding:8px 14px; border-radius:999px; background:linear-gradient(90deg,var(--c2),var(--c3)); color:#071028}
 
-    /* Responsive tweaks */
-    @media (max-width:520px){ .controls{flex-direction:column} }
+    /* decorative shards */
+    .shard{position:absolute; width:220px; height:220px; transform:translateZ(0); filter:blur(0.6px); opacity:0.12}
+    .shard.s1{right:-40px; top:10%; background:linear-gradient(45deg, rgba(255,91,255,0.18), rgba(126,249,255,0.12)); clip-path:polygon(50% 0,100% 35%,80% 100%,20% 100%,0 35%);}
+    .shard.s2{left:-60px; bottom:8%; width:260px; height:260px; background:linear-gradient(45deg, rgba(179,136,255,0.12), rgba(255,208,126,0.06)); clip-path:polygon(50% 0,100% 30%,88% 100%,12% 100%,0 30%);}
+
+    footer{position:fixed; left:12px; bottom:12px; z-index:4; font-size:12px; color:rgba(255,255,255,0.65)}
+
+    /* snow / floaters canvas sits above background but below UI */
+    canvas#floaters{position:fixed; inset:0; width:100%; height:100%; z-index:1; pointer-events:none}
+
+    @media (max-width:880px){ .card{grid-template-columns:1fr; } .panel{order:-1} }
   </style>
 </head>
 <body>
-  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="color-overlay" aria-hidden="true"></div>
+
+  <!-- floating colored particles / snow -->
+  <canvas id="floaters" aria-hidden="true"></canvas>
 
   <main class="stage" role="main">
-    <div style="position:relative;">
-      <div id="astral" class="astral-text" title="Click to edit">astral
-        <div class="shimmer" aria-hidden="true">astral</div>
-      </div>
-    </div>
+    <div class="card" role="region" aria-label="ASTRAL showcase">
 
-    <div class="controls" aria-label="controls">
-      <label class="muted" for="textInput">Change text:</label>
-      <input id="textInput" type="text" value="astral" aria-label="text input">
-      <button id="applyBtn">Apply</button>
-      <button id="randomBtn">Random</button>
-    </div>
+      <section class="hero" aria-labelledby="title">
+        <h1 id="title" class="title">ASTRAL <span class="emoji">🪐</span></h1>
+        <p class="subtitle">A neon-drenched, dreamy experiment — colors borrowed from a cosmic retro-future. Click the buttons or hover to explore.</p>
 
-    <p class="muted">Tip: click the big word or edit the input above.</p>
+        <div class="controls" role="toolbar" aria-label="primary actions">
+          <button id="botBtn" class="btn btn--neon" aria-pressed="false">BOT</button>
+          <button id="channelBtn" class="btn btn--ghost">CHANNEL</button>
+          <button id="shuffleBtn" class="btn" title="Shuffle colors">Shuffle</button>
+        </div>
+
+        <p style="margin-top:18px; color:rgba(255,255,255,0.75)">Make it playful — buttons animate, the snow drifts, and shards glow. Use the Shuffle button to randomize neon palette.</p>
+      </section>
+
+      <aside class="panel" aria-label="decorative panel">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <div class="badge">ASTRAL SHOP</div>
+          <div style="font-weight:700; font-size:20px">Neon Goods & Cosmic Vibes</div>
+          <div style="max-width:260px; text-align:center; color:rgba(255,255,255,0.82)">Decorative panel — shows the theme and quick links. Press BOT or CHANNEL to trigger fun animations.</div>
+        </div>
+      </aside>
+
+      <div class="shard s1" aria-hidden="true"></div>
+      <div class="shard s2" aria-hidden="true"></div>
+    </div>
   </main>
 
-  <footer>Made with ✨ — single-file demo</footer>
+  <footer>Made with ✨ — druggy neon vibes</footer>
 
   <script>
-    // STARFIELD CANVAS
-    const canvas = document.getElementById('stars');
+    // --- Floaters (snow-like colorful particles) on canvas ---
+    const canvas = document.getElementById('floaters');
     const ctx = canvas.getContext('2d');
     let W = canvas.width = innerWidth;
     let H = canvas.height = innerHeight;
-    const TAU = Math.PI * 2;
 
-    // create stars
-    const numStars = Math.round((W * H) / 8000); // density scales with area
-    const stars = [];
+    const TAU = Math.PI*2;
+    let huePalette = [300, 185, 265, 40]; // initial hues: pink, cyan, purple, warm
 
-    function rand(min, max){ return Math.random() * (max - min) + min }
+    function rand(min,max){return Math.random()*(max-min)+min}
 
-    function makeStar(){
-      return {
-        x: rand(0, W), y: rand(0, H),
-        r: rand(0.25, 1.8),
-        alpha: rand(0.02, 0.9),
-        twinkleSpeed: rand(0.002, 0.02),
-        vx: rand(-0.02, 0.02),
-        vy: rand(-0.02, 0.02)
-      }
+    // particle structure
+    const particles = [];
+    const PCOUNT = Math.round((W*H)/50000); // scale particle count
+    for(let i=0;i<Math.max(28, PCOUNT); i++){
+      particles.push({
+        x: rand(0,W), y: rand(-H, H), r: rand(2,12), life: rand(80,420), maxLife: rand(200,600),
+        vx: rand(-0.3,0.6), vy: rand(0.2,1.2), hue: huePalette[Math.floor(rand(0,huePalette.length))], alpha: rand(0.18,0.9), shape: Math.random()<0.3 ? 'blob' : 'snow'
+      })
     }
 
-    for(let i=0;i<numStars;i++) stars.push(makeStar());
-
-    window.addEventListener('resize', ()=>{
-      W = canvas.width = innerWidth; H = canvas.height = innerHeight;
-      // repopulate a bit if needed
-      while(stars.length < Math.round((W * H) / 8000)) stars.push(makeStar());
-    });
-
-    // mouse parallax
-    const mouse = {x: W/2, y: H/2};
-    window.addEventListener('mousemove', e=>{ mouse.x = e.clientX; mouse.y = e.clientY });
+    function onResize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+    window.addEventListener('resize', onResize);
 
     function draw(){
       ctx.clearRect(0,0,W,H);
+      for(let p of particles){
+        p.x += p.vx; p.y += p.vy; p.life -= 1;
+        // respawn if out
+        if(p.y > H + 40 || p.x < -60 || p.x > W + 60 || p.life <= 0){
+          p.x = rand(-60,W+60); p.y = rand(-H, -10); p.life = p.maxLife = rand(180,640); p.vx = rand(-0.4,0.8); p.vy = rand(0.2,1.2);
+          p.hue = huePalette[Math.floor(rand(0,huePalette.length))]; p.alpha = rand(0.18,0.95); p.r = rand(2,12);
+        }
 
-      // subtle gradient overlay
-      const g = ctx.createLinearGradient(0,0,0,H);
-      g.addColorStop(0,'rgba(10,18,35,0.08)');
-      g.addColorStop(1,'rgba(2,6,12,0.12)');
-      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-
-      for(let s of stars){
-        // twinkle
-        s.alpha += Math.sin(performance.now() * s.twinkleSpeed) * 0.002;
-        if(s.alpha < 0.02) s.alpha = 0.02;
-        if(s.alpha > 1) s.alpha = 1;
-
-        // parallax offset from center based on mouse
-        const dx = (s.x - mouse.x) * 0.0006;
-        const dy = (s.y - mouse.y) * 0.0006;
-
+        // draw with glow
         ctx.beginPath();
-        ctx.fillStyle = 'rgba(255,255,255,' + (s.alpha * 0.9) + ')';
-        ctx.arc(s.x + dx*200, s.y + dy*200, s.r, 0, TAU);
-        ctx.fill();
+        if(p.shape === 'blob'){
+          // colorful blurry blob
+          const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*8);
+          grd.addColorStop(0, `hsla(${p.hue},90%,65%,${p.alpha})`);
+          grd.addColorStop(0.35, `hsla(${p.hue},85%,55%,${p.alpha*0.35})`);
+          grd.addColorStop(1, `hsla(${p.hue},85%,35%,0)`);
+          ctx.fillStyle = grd; ctx.arc(p.x,p.y,p.r*4,0,TAU); ctx.fill();
+        } else {
+          // snowflake-like circle with soft edge
+          ctx.fillStyle = `hsla(${p.hue},90%,70%,${p.alpha})`;
+          ctx.shadowColor = `hsla(${p.hue},90%,65%,${p.alpha})`;
+          ctx.shadowBlur = Math.max(8, p.r*2);
+          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill();
+          ctx.shadowBlur = 0;
+        }
       }
-
-      // occasional shooting star effect
-      if(Math.random() < 0.003){ spawnShootingStar() }
-
-      // draw shooting stars
-      for(let i = shootingStars.length-1; i>=0; i--){
-        const ss = shootingStars[i];
-        ss.x += ss.vx; ss.y += ss.vy; ss.life -= 1;
-        ctx.beginPath(); ctx.moveTo(ss.x, ss.y);
-        ctx.lineTo(ss.x - ss.vx*6, ss.y - ss.vy*6);
-        ctx.strokeStyle = 'rgba(255,255,255,' + (ss.life/ss.maxLife) + ')';
-        ctx.lineWidth = 1.5; ctx.stroke();
-        if(ss.life <= 0) shootingStars.splice(i,1);
-      }
-
       requestAnimationFrame(draw);
-    }
-
-    // shooting stars container
-    const shootingStars = [];
-    function spawnShootingStar(){
-      shootingStars.push({ x: rand(0, W), y: rand(0, H/3), vx: rand(6, 12), vy: rand(1,3), life: 30, maxLife:30 });
     }
 
     draw();
 
-    // TEXT INTERACTION
-    const astral = document.getElementById('astral');
-    const input = document.getElementById('textInput');
-    const applyBtn = document.getElementById('applyBtn');
-    const randomBtn = document.getElementById('randomBtn');
+    // --- Button interactions ---
+    const botBtn = document.getElementById('botBtn');
+    const channelBtn = document.getElementById('channelBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const title = document.getElementById('title');
 
-    function setText(t){
-      const sanitized = String(t).slice(0,40);
-      astral.childNodes[0].nodeValue = sanitized; // change text node
-      // update shimmer to match
-      const shimmer = astral.querySelector('.shimmer');
-      shimmer.textContent = sanitized;
+    function pulseTitle(hues){
+      // make a shifting gradient on the title using CSS variable background
+      const g = `linear-gradient(90deg, hsl(${hues[0]},90%,65%), hsl(${hues[1]},90%,65%), hsl(${hues[2]},85%,66%), hsl(${hues[3]},92%,70%))`;
+      title.style.backgroundImage = g;
+      // small wiggle
+      title.animate([{transform:'translateY(0px)'},{transform:'translateY(-6px)'},{transform:'translateY(0px)'}], {duration:800, iterations:1});
     }
 
-    applyBtn.addEventListener('click', ()=> setText(input.value || 'astral'));
-    input.addEventListener('keydown', e=>{ if(e.key === 'Enter') setText(input.value || 'astral') });
-
-    astral.addEventListener('click', ()=>{
-      // inline edit: focus input
-      input.focus(); input.select();
+    botBtn.addEventListener('click', ()=>{
+      botBtn.setAttribute('aria-pressed','true');
+      // unleash a burst of bright particles
+      for(let i=0;i<14;i++) particles.push({x: innerWidth*0.25 + rand(-80,80), y: innerHeight*0.5 + rand(-80,80), r: rand(3,14), life: rand(80,220), maxLife: rand(80,220), vx: rand(1,6), vy: rand(-1.6,1.6), hue: Math.floor(rand(260,320)), alpha: rand(0.6,1), shape:'blob'});
+      pulseTitle([330, 190, 270, 40]);
+      setTimeout(()=> botBtn.setAttribute('aria-pressed','false'), 1200);
     });
 
-    randomBtn.addEventListener('click', ()=>{
-      const samples = ['astral','nebula','cosmic','lumen','astrum','stellar','aurora','void','polaris','eclipse'];
-      const pick = samples[Math.floor(Math.random()*samples.length)]; setText(pick); input.value = pick;
+    channelBtn.addEventListener('click', ()=>{
+      // quieter teal-blue ripple
+      for(let i=0;i<10;i++) particles.push({x: innerWidth*0.75 + rand(-60,60), y: innerHeight*0.45 + rand(-120,120), r: rand(2,10), life: rand(160,420), maxLife: rand(160,420), vx: rand(-1.5,1.2), vy: rand(0.2,1.2), hue: Math.floor(rand(160,200)), alpha: rand(0.2,0.9), shape:'snow'});
+      pulseTitle([200, 180, 240, 60]);
     });
 
-    // initial text
-    setText('astral');
+    shuffleBtn.addEventListener('click', ()=>{
+      // randomize the hue palette and apply
+      huePalette = [Math.floor(rand(0,360)), Math.floor(rand(0,360)), Math.floor(rand(0,360)), Math.floor(rand(0,360))];
+      pulseTitle(huePalette);
+      // also tint some particles
+      for(let p of particles){ p.hue = huePalette[Math.floor(rand(0,huePalette.length))] }
+    });
+
+    // small touch: floating shards rotate slowly
+    const shards = document.querySelectorAll('.shard');
+    let t0 = performance.now();
+    function shardLoop(now){
+      const dt = (now - t0)/1000; t0 = now;
+      shards.forEach((s,i)=>{
+        const rot = Math.sin(now/2000 + i)*6; s.style.transform = `rotate(${rot}deg)`;
+      });
+      requestAnimationFrame(shardLoop);
+    }
+    requestAnimationFrame(shardLoop);
+
+    // gracefully handle visibility change to pause animations (performance)
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.hidden){ /* could pause heavy loops here */ }
+    });
   </script>
 </body>
 </html>
